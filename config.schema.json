@@ -1,0 +1,6 @@
+{
+  "pluginAlias": "Chromecast",
+  "pluginType": "platform",
+  "singular": true,
+  "schema": { "type": "object", "properties": { "nom": { "title": "Nom", "type": "string", "default": "Chromecast" } } }
+}

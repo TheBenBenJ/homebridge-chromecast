@@ -1,0 +1,9 @@
+{
+  "name": "homebridge-chromecast",
+  "version": "1.0.0",
+  "description": "Chromecast Chambre en télé HomeKit : la télécommande du Centre de contrôle de l'iPhone passe par chromecast-pont.py",
+  "main": "index.js",
+  "private": true,
+  "keywords": ["homebridge-plugin"],
+  "engines": { "homebridge": "^1.6.0 || ^2.0.0", "node": ">=22" }
+}
