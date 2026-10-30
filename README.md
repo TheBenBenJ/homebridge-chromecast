@@ -7,7 +7,7 @@ Un Chromecast avec Google TV devient une télé HomeKit : la télécommande du C
 ## Composants
 
 - `index.js` : le plugin Homebridge. Il publie l'accessoire et envoie les touches au pont.
-- `pont/chromecast-pont.py` : garde ouverte la connexion Android TV Remote ([androidtvremote2](https://github.com/tronikos/androidtvremote2)), sur `127.0.0.1:5052` et sans authentification. Ne l'expose pas sur le réseau.
+- `pont/chromecast-pont.py` : garde ouverte la connexion Android TV Remote ([androidtvremote2](https://github.com/tronikos/androidtvremote2)) et retrouve le Chromecast par son nom, même si son IP change, sur `127.0.0.1:5052` et sans authentification. Ne l'expose pas sur le réseau.
 - `pont/reveil-cec.py` : écoute le paquet magique que `homebridge-webos-tv` envoie à `127.0.0.1` (`broadcastAdr`), lance une appli Cast puis la quitte : la télé se rallume par CEC.
 
 ## Installation
@@ -16,7 +16,7 @@ Le plugin n'est pas sur npm : installe-le depuis ce dossier.
 
 ```sh
 python3 -m venv venv && venv/bin/pip install androidtvremote2 pychromecast
-venv/bin/python pont/chromecast-pont.py 192.168.1.x
+venv/bin/python pont/chromecast-pont.py "Chromecast Salon"
 curl -X POST 127.0.0.1:5052/association -d '{}'                 # un code s'affiche à l'écran
 curl -X POST 127.0.0.1:5052/association -d '{"code":"ABC123"}'
 ```
