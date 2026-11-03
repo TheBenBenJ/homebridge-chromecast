@@ -1,3 +1,12 @@
+# Dependencies and virtual environments
 node_modules/
+venv/
+.venv/
+
+# Python caches
 __pycache__/
+*.pyc
+
+# Logs and local files
+*.log
 .DS_Store
