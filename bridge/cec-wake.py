@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-# reveil-cec.py <MAC de la télé> <nom du Chromecast>
-# Réveil d'une TV LG : en Wi-Fi elle ignore le Wake-on-LAN (testé sur une 49UH603V le 30/10/2026), mais le Chromecast branché
-# dessus la rallume en HDMI-CEC. Le plugin webOS envoie son paquet magique ici (broadcastAdr 127.0.0.1) ; on lance alors une
-# appli Cast, puis on la quitte : la télé reste allumée.
+"""Wake an LG TV through HDMI-CEC when homebridge-webos-tv sends its Wake-on-LAN packet.
+
+Usage: cec-wake.py <TV MAC address> <Chromecast name>
+
+Over Wi-Fi the LG TV ignores Wake-on-LAN (tested on a 49UH603V on 2026-10-30), but the
+Chromecast plugged into it can turn it on through HDMI-CEC. homebridge-webos-tv is configured
+with "broadcastAdr": "127.0.0.1", so its magic packet arrives here. This script then starts a
+Cast app and quits it: the TV wakes up and stays on.
+"""
 import socket
 import sys
 import time
@@ -10,41 +15,53 @@ import time
 import pychromecast
 
 if len(sys.argv) != 3:
-    sys.exit("usage : reveil-cec.py <MAC de la télé> <nom du Chromecast>")
-CHROMECAST = sys.argv[2]
-MAGIC = b"\xff" * 6 + bytes.fromhex(sys.argv[1].replace(":", "")) * 16
-ATTENTE = 30  # le plugin répète son paquet tant que la télé ne répond pas
+    sys.exit("usage: cec-wake.py <TV MAC address> <Chromecast name>")
+CHROMECAST_NAME = sys.argv[2]
+MAGIC_PACKET = b"\xff" * 6 + bytes.fromhex(sys.argv[1].replace(":", "")) * 16
+COOLDOWN_SECONDS = 30  # the webOS plugin repeats its packet until the TV answers
+WOL_PORT = 9
+CAST_APP_ID = "CC1AD845"  # Google's Default Media Receiver
 
 
-def reveiller():
-    casts, nav = pychromecast.get_listed_chromecasts(friendly_names=[CHROMECAST], timeout=8)
+def wake_tv():
+    casts, browser = pychromecast.get_listed_chromecasts(friendly_names=[CHROMECAST_NAME], timeout=8)
     try:
         if not casts:
-            print("Chromecast introuvable", flush=True)
+            print("Chromecast not found", flush=True)
             return
         cast = casts[0]
         cast.wait(timeout=10)
-        if not cast.is_idle:  # une appli déjà ouverte ne redéclenche pas le CEC (is_stand_by ne le dit pas : vrai dès que la télé dort)
+        # An app that is already open does not trigger CEC again, so quit it first.
+        # (is_stand_by cannot tell: it is true as soon as the TV sleeps.)
+        if not cast.is_idle:
             cast.quit_app()
             time.sleep(5)
-        cast.start_app("CC1AD845")
+        cast.start_app(CAST_APP_ID)
         time.sleep(4)
         cast.quit_app()
-        print(time.strftime("%H:%M:%S"), "télé réveillée par le Chromecast", flush=True)
+        print(time.strftime("%H:%M:%S"), "TV woken up by the Chromecast", flush=True)
     finally:
-        for cast in casts:  # sinon son thread survit à la découverte et boucle sur une exception (38 Go de log le 30/10/2026)
+        # Otherwise the cast's thread outlives discovery and loops on an exception (38 GB of logs on 2026-10-30).
+        for cast in casts:
             cast.disconnect(timeout=5)
-        nav.stop_discovery()
+        browser.stop_discovery()
 
 
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.bind(("0.0.0.0", 9))  # macOS refuse ce port sur 127.0.0.1 sans être root, d'où le filtre sur l'expéditeur
-dernier = 0
-while True:
-    paquet, (origine, _) = s.recvfrom(1024)
-    if origine == "127.0.0.1" and paquet == MAGIC and time.time() - dernier > ATTENTE:
-        dernier = time.time()
-        try:
-            reveiller()
-        except Exception as e:
-            print("échec du réveil :", e, flush=True)
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # Bound on all interfaces because macOS refuses this port on 127.0.0.1 without root;
+    # hence the filter on the sender below.
+    sock.bind(("0.0.0.0", WOL_PORT))
+    last_wake = 0
+    while True:
+        packet, (sender, _) = sock.recvfrom(1024)
+        if sender == "127.0.0.1" and packet == MAGIC_PACKET and time.time() - last_wake > COOLDOWN_SECONDS:
+            last_wake = time.time()
+            try:
+                wake_tv()
+            except Exception as error:
+                print("wake failed:", error, flush=True)
+
+
+if __name__ == "__main__":
+    main()
