@@ -1,7 +1,7 @@
 {
   "name": "homebridge-chromecast",
   "version": "1.0.0",
-  "description": "Chromecast en télé HomeKit : la télécommande du Centre de contrôle de l'iPhone passe par pont/chromecast-pont.py",
+  "description": "Chromecast with Google TV as a HomeKit TV for the iPhone Control Center remote, through a local Android TV Remote bridge; optional HDMI-CEC wake for LG TVs",
   "main": "index.js",
   "private": true,
   "keywords": [

@@ -2,5 +2,16 @@
   "pluginAlias": "Chromecast",
   "pluginType": "platform",
   "singular": true,
-  "schema": { "type": "object", "properties": { "nom": { "title": "Nom", "type": "string", "default": "Chromecast" } } }
+  "headerDisplay": "Needs the local bridge (bridge/chromecast-bridge.py) running on the Homebridge host. See the README.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "nom": {
+        "title": "Name",
+        "description": "Name of the TV in the Home app. It also defines the accessory identity: changing it makes HomeKit see a new TV.",
+        "type": "string",
+        "default": "Chromecast"
+      }
+    }
+  }
 }
