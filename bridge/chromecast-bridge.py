@@ -16,6 +16,7 @@ GET  /etat         {"etat": "ok" | "a_associer" | "injoignable", "allume", "app"
 POST /touche       {"touche"}: one key name from KEYS
 POST /association  {} shows a code on the Chromecast screen, {"code"} completes the pairing
 """
+
 import asyncio
 import json
 import os
@@ -32,7 +33,9 @@ if len(sys.argv) != 2:
     sys.exit("usage: chromecast-bridge.py <Chromecast name>")
 CHROMECAST_NAME = sys.argv[1]
 PORT = 5052
-CLIENT_NAME = "Homebridge Mac"  # name this remote shows on the Chromecast; unchanged so the existing pairing stays as it is
+CLIENT_NAME = (
+    "Homebridge Mac"  # name this remote shows on the Chromecast; unchanged so the existing pairing stays as it is
+)
 MAX_OUTAGE_SECONDS = 300  # unreachable this long: exit, so that the service manager restarts the bridge, which looks the Chromecast up again (its IP may have changed)
 RETRY_SECONDS = 20
 DISCOVERY_TIMEOUT_SECONDS = 8
@@ -63,7 +66,9 @@ KEYS = {
 ERROR_NO_ANSWER = "Le Chromecast ne répond pas."
 ERROR_CODE_REJECTED = "Code refusé."
 
-loop = asyncio.new_event_loop()  # androidtvremote2 runs on this loop, in a background thread; HTTP requests are served by other threads
+loop = (
+    asyncio.new_event_loop()
+)  # androidtvremote2 runs on this loop, in a background thread; HTTP requests are served by other threads
 remote = None  # AndroidTVRemote, created once the Chromecast has been found
 state = {"status": STATUS_UNREACHABLE}  # "status", plus "reachable" once androidtvremote2 reports it
 outage_timer = None
@@ -71,7 +76,9 @@ outage_timer = None
 
 def find_host():
     """Return the Chromecast's IP address, looked up by name on the local network (mDNS), or None."""
-    casts, browser = pychromecast.discovery.discover_listed_chromecasts(friendly_names=[CHROMECAST_NAME], discovery_timeout=DISCOVERY_TIMEOUT_SECONDS)
+    casts, browser = pychromecast.discovery.discover_listed_chromecasts(
+        friendly_names=[CHROMECAST_NAME], discovery_timeout=DISCOVERY_TIMEOUT_SECONDS
+    )
     browser.stop_discovery()
     return casts[0].host if casts else None
 
@@ -105,7 +112,7 @@ async def connect():
         except InvalidAuth:
             state["status"] = STATUS_NEEDS_PAIRING
             return
-        except (CannotConnect, ConnectionClosed):
+        except CannotConnect, ConnectionClosed:
             state["status"] = STATUS_UNREACHABLE
             await asyncio.sleep(RETRY_SECONDS)
             continue
@@ -130,7 +137,13 @@ def read_state():
     if state["status"] != STATUS_OK or not state.get("reachable", True):
         return {"etat": STATUS_UNREACHABLE if state["status"] == STATUS_OK else state["status"]}
     volume = remote.volume_info or {}
-    return {"etat": STATUS_OK, "allume": remote.is_on, "app": remote.current_app, "volume": volume.get("level"), "muet": volume.get("muted")}
+    return {
+        "etat": STATUS_OK,
+        "allume": remote.is_on,
+        "app": remote.current_app,
+        "volume": volume.get("level"),
+        "muet": volume.get("muted"),
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -170,7 +183,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply({"ok": False})
         try:
             loop.call_soon_threadsafe(remote.send_key_command, key)
-        except (ConnectionClosed, RuntimeError):
+        except ConnectionClosed, RuntimeError:
             return self.reply({"ok": False})
         return self.reply({"ok": read_state()["etat"] == STATUS_OK})
 
@@ -181,7 +194,7 @@ class Handler(BaseHTTPRequestHandler):
             run_in_loop(finish_pairing(str(body["code"]).strip()) if body.get("code") else remote.async_start_pairing())
         except InvalidAuth:
             return self.reply({"ok": False, "erreur": ERROR_CODE_REJECTED})
-        except (CannotConnect, ConnectionClosed, TimeoutError):
+        except CannotConnect, ConnectionClosed, TimeoutError:
             return self.reply({"ok": False, "erreur": ERROR_NO_ANSWER})
         return self.reply({"ok": True})
 

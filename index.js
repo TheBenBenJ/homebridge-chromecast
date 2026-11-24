@@ -58,7 +58,11 @@ class ChromecastPlatform {
     // "nom" is the historical config key for the name. The name also seeds the accessory UUID,
     // which is the HomeKit identity: changing the formula or the name creates a new television.
     const name = this.config.nom || DEFAULT_NAME;
-    const accessory = new this.api.platformAccessory(name, uuid.generate(`${PLUGIN_NAME}:${name}`), Categories.TELEVISION);
+    const accessory = new this.api.platformAccessory(
+      name,
+      uuid.generate(`${PLUGIN_NAME}:${name}`),
+      Categories.TELEVISION,
+    );
 
     // Last known power state. The remote protocol only has a power toggle, so the plugin sends it
     // only when HomeKit asks for the other state, and polls the bridge to follow the real state.
@@ -103,9 +107,11 @@ class ChromecastPlatform {
     // (the iPhone volume buttons while the remote is open). Service name and subtype are part of
     // the accessory identity: keep them.
     const speaker = accessory.addService(Service.TelevisionSpeaker, `${name} Son`, 'son');
-    speaker.setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE)
+    speaker
+      .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE)
       .setCharacteristic(Characteristic.VolumeControlType, Characteristic.VolumeControlType.RELATIVE);
-    speaker.getCharacteristic(Characteristic.Mute)
+    speaker
+      .getCharacteristic(Characteristic.Mute)
       .onGet(() => false)
       .onSet(() => sendKey('muet', log));
     speaker.getCharacteristic(Characteristic.VolumeSelector).onSet((value) => {
@@ -116,7 +122,8 @@ class ChromecastPlatform {
 
     // A single input source, the Chromecast itself (ActiveIdentifier 1).
     const input = accessory.addService(Service.InputSource, 'Chromecast', 'entree');
-    input.setCharacteristic(Characteristic.Identifier, 1)
+    input
+      .setCharacteristic(Characteristic.Identifier, 1)
       .setCharacteristic(Characteristic.ConfiguredName, 'Chromecast')
       .setCharacteristic(Characteristic.IsConfigured, Characteristic.IsConfigured.CONFIGURED)
       .setCharacteristic(Characteristic.InputSourceType, Characteristic.InputSourceType.HDMI)
@@ -126,7 +133,9 @@ class ChromecastPlatform {
     // Follow power changes made elsewhere, for example with the physical remote.
     setInterval(async () => {
       try {
-        const state = await (await fetch(`${BRIDGE_URL}/etat`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })).json();
+        const state = await (
+          await fetch(`${BRIDGE_URL}/etat`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+        ).json();
         if (state.etat === 'ok' && state.allume != null && state.allume !== isOn) {
           isOn = state.allume;
           tv.updateCharacteristic(Characteristic.Active, isOn ? 1 : 0);

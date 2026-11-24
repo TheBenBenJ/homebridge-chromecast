@@ -12,5 +12,9 @@
     "node": ">=22"
   },
   "repository": "github:TheBenBenJ/homebridge-chromecast",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test",
+    "lint": "npx --yes @biomejs/biome@2.6.8 check ."
+  }
 }

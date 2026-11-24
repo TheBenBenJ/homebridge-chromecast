@@ -56,6 +56,20 @@ jobs:
           while IFS= read -r -d '' f; do python -m json.tool "$f" > /dev/null || status=1; done < <(git ls-files -z -- '*.json')
           exit $status
 
+      - name: Biome (lint and format)
+        run: npx --yes @biomejs/biome@2.6.8 check .
+
+      - name: Offline tests
+        # test/plugin.test.js: a fake HomeKit and a fake bridge; no network, no Chromecast, no pairing.
+        run: node --test
+
+      - name: Python bridge (compile, Ruff lint and format)
+        run: |
+          python3 -m py_compile bridge/*.py
+          pip install --quiet ruff
+          ruff check bridge
+          ruff format --check bridge
+
       - name: Promote to production
         # Fast-forward only: GitHub refuses anything else, and the run turns red.
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
